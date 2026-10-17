@@ -23,7 +23,7 @@ export const BackgroundCanvas: React.FC = () => {
 
     const getFrameFilename = (index1Based: number) => {
       const paddedIndex = String(index1Based).padStart(3, '0');
-      return `/frames/ezgif-frame-${paddedIndex}.png`;
+      return `/frames/ezgif-frame-${paddedIndex}.webp`;
     };
 
     const drawFrame = (frameIdx: number) => {
@@ -49,7 +49,6 @@ export const BackgroundCanvas: React.FC = () => {
         drawHeight = canvasHeight;
         offsetY = 0;
 
-        // Mobile responsive shift (< 768px): shift 3D face slightly so face profile is clearly visible on mobile!
         if (window.innerWidth < 768) {
           offsetX = (canvasWidth - drawWidth) * 0.65;
         } else {
@@ -78,7 +77,6 @@ export const BackgroundCanvas: React.FC = () => {
     const updateCutoutOpacity = (frameIdx: number) => {
       const w = window.innerWidth;
       
-      // Dynamic SVG Mask Geometry tracking 3D face profile across screen sizes
       let cx = 520;
       let rx = 230;
       let ry = 180;
@@ -101,15 +99,12 @@ export const BackgroundCanvas: React.FC = () => {
       document.documentElement.style.setProperty('--mask-rx', String(rx));
       document.documentElement.style.setProperty('--mask-ry', String(ry));
 
-      // Solid PORTFOLIO text ONLY on mobile view (< 768px)
       if (w < 768) {
         document.documentElement.style.setProperty('--mask-cutout-opacity', '0');
         return;
       }
 
       const shatterPercent = frameIdx / TOTAL_FRAMES;
-      // Below 50% shattered: mask cutout opacity = 1.0 (text behind head hidden)
-      // Between 50% and 70% shattered: mask cutout opacity smoothly fades 1.0 -> 0.0 (text behind head smoothly appears!)
       let cutoutOpacity = 1.0;
       if (shatterPercent > 0.50) {
         const fadeProgress = Math.min(1.0, (shatterPercent - 0.50) / 0.20);
@@ -135,21 +130,17 @@ export const BackgroundCanvas: React.FC = () => {
       renderCurrentState();
     };
 
-    let shatterProgress = 0; // 0.0 to 1.0 (maps to Frame 0 to 210)
-    const SHATTER_70_FRAME = Math.floor(TOTAL_FRAMES * 0.70); // Frame 210 (70% shattered)
+    let shatterProgress = 0;
+    const SHATTER_70_FRAME = Math.floor(TOTAL_FRAMES * 0.70);
 
-    // Wheel listener: holds initial hero content sticky at top while shattering background to 70%
     const handleWheel = (e: WheelEvent) => {
       const scrollTop = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
-      
       if (scrollTop <= 10) {
         if (e.deltaY > 0 && shatterProgress < 1) {
-          // Scrolling down at top: lock page scroll and shatter background face up to 70%
           e.preventDefault();
           shatterProgress = Math.min(1, shatterProgress + Math.abs(e.deltaY) * 0.0025);
           targetFrame = shatterProgress * SHATTER_70_FRAME;
         } else if (e.deltaY < 0 && shatterProgress > 0) {
-          // Scrolling up at top: un-shatter background face back to intact state
           e.preventDefault();
           shatterProgress = Math.max(0, shatterProgress - Math.abs(e.deltaY) * 0.0025);
           targetFrame = shatterProgress * SHATTER_70_FRAME;
@@ -157,7 +148,6 @@ export const BackgroundCanvas: React.FC = () => {
       }
     };
 
-    let touchStartY = 0;
     const handleTouchStart = (e: TouchEvent) => {
       touchStartY = e.touches[0].clientY;
     };
@@ -213,8 +203,10 @@ export const BackgroundCanvas: React.FC = () => {
           const percent = Math.floor((totalLoadedCount / TOTAL_FRAMES) * 100);
           setLoadPercent(percent);
 
-          if (totalLoadedCount >= 10) {
+          // As soon as the first frame loads, hide the loading screen immediately
+          if (index0Based === 0 || totalLoadedCount >= 1) {
             setIsLoading(false);
+            renderCurrentState();
           }
         }
 
@@ -227,36 +219,44 @@ export const BackgroundCanvas: React.FC = () => {
     };
 
     const startSmartPreload = () => {
-      const keyframeIndices: number[] = [];
-      const remainingIndices: number[] = [];
+      loadSingleFrame(0, () => {
+        renderCurrentState();
 
-      for (let i = 0; i < TOTAL_FRAMES; i++) {
-        if (i % 3 === 0 || i === TOTAL_FRAMES - 1) {
-          keyframeIndices.push(i);
-        } else {
-          remainingIndices.push(i);
-        }
-      }
+        const keyframeIndices: number[] = [];
+        const remainingIndices: number[] = [];
 
-      const queue = [...keyframeIndices, ...remainingIndices];
-      let activeRequests = 0;
-      const MAX_CONCURRENT = 6;
-
-      const processQueue = () => {
-        while (activeRequests < MAX_CONCURRENT && queue.length > 0) {
-          const nextIndex = queue.shift();
-          if (nextIndex !== undefined) {
-            activeRequests++;
-            loadSingleFrame(nextIndex, () => {
-              activeRequests--;
-              processQueue();
-            });
+        for (let i = 1; i < TOTAL_FRAMES; i++) {
+          if (i % 3 === 0 || i === TOTAL_FRAMES - 1) {
+            keyframeIndices.push(i);
+          } else {
+            remainingIndices.push(i);
           }
         }
-      };
 
-      processQueue();
+        const queue = [...keyframeIndices, ...remainingIndices];
+        let activeRequests = 0;
+        const MAX_CONCURRENT = 8;
+
+        const processQueue = () => {
+          while (activeRequests < MAX_CONCURRENT && queue.length > 0) {
+            const nextIndex = queue.shift();
+            if (nextIndex !== undefined) {
+              activeRequests++;
+              loadSingleFrame(nextIndex, () => {
+                activeRequests--;
+                processQueue();
+              });
+            }
+          }
+        };
+
+        processQueue();
+      });
     };
+
+    const failsafe = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
 
     const animate = () => {
       const delta = targetFrame - currentFrame;
@@ -282,6 +282,7 @@ export const BackgroundCanvas: React.FC = () => {
     animFrameId = requestAnimationFrame(animate);
 
     return () => {
+      clearTimeout(failsafe);
       window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('scroll', updateTargetFromScroll);
       window.removeEventListener('wheel', handleWheel);
@@ -294,17 +295,17 @@ export const BackgroundCanvas: React.FC = () => {
   return (
     <>
       {isLoading && (
-        <div className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center transition-opacity duration-500">
+        <div className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center transition-opacity duration-300">
           <div className="w-10 h-10 border-3 border-white/20 border-t-white rounded-full animate-spin mb-4" />
           <div className="text-xs uppercase tracking-widest text-white/80 font-medium font-body">
-            Loading Background {loadPercent}%
+            Loading {loadPercent}%
           </div>
         </div>
       )}
 
       <canvas
         ref={canvasRef}
-        className="fixed top-0 left-0 w-screen h-screen pointer-events-none z-0 block object-cover"
+        className="fixed top-0 left-0 w-screen h-screen pointer-events-none z-0 block object-cover filter brightness-[2] contrast-[1.55] saturate-[1.35]"
       />
     </>
   );

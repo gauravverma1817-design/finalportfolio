@@ -9,8 +9,11 @@ interface HeroSectionProps {
 export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenHireModal }) => {
   return (
     <section id="hero" className="relative w-full min-h-screen bg-black/20 flex flex-col justify-between overflow-hidden border-b border-white/10">
-      {/* Subtle Ambient Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/70 z-0 pointer-events-none" />
+      
+      {/* Left-to-Right Black Vignette: completely hides ghost text & canvas noise behind your bio */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-transparent z-0 pointer-events-none" />
+      {/* Top-to-Bottom Ambient Fade */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80 z-0 pointer-events-none" />
 
       {/* Permanently Fixed PORTFOLIO Header */}
       <div className="fixed top-14 left-0 right-0 w-full px-[15px] pointer-events-none select-none z-0">
@@ -57,7 +60,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenHireModal }) => 
             </filter>
           </defs>
 
-          {/* Main Plain PORTFOLIO Text (no inner border/stroke, darker blue top-to-bottom fade) */}
+          {/* Main Plain PORTFOLIO Text */}
           <text
             x="50%"
             y="50%"
@@ -81,10 +84,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenHireModal }) => 
         </svg>
       </div>
 
-      {/* Hero Content Container: lg:pt-[49vh] positions GAURAV VERMA baseline to match PORTFOLIO bottom baseline 1:1 */}
+      {/* Hero Content Container */}
       <div className="relative z-10 w-full px-[15px] pt-[58vh] sm:pt-[44vh] lg:pt-[49vh] pb-8 sm:pb-12 flex-1 flex flex-col justify-between">
 
-        {/* Content Overlap Layer (GAURAV VERMA overlaps over lower portion of fixed PORTFOLIO) */}
+        {/* Content Overlap Layer */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end relative z-10">
 
           {/* Left Column (7 cols): Hello I'm + GAURAV VERMA + Subtitle + Bio + Badge */}
@@ -94,7 +97,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenHireModal }) => 
               {HERO_DATA.greeting}
             </div>
 
-            {/* Giant Name Header GAURAV VERMA overlapping directly with bottom of PORTFOLIO */}
+            {/* Giant Name Header GAURAV VERMA */}
             <h1 className="font-tall text-5xl sm:text-8xl lg:text-[104px] leading-[0.82] tracking-normal font-black text-white uppercase drop-shadow-[0_4px_25px_rgba(0,0,0,0.8)]">
               {HERO_DATA.name}
             </h1>
@@ -105,8 +108,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenHireModal }) => 
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
             </div>
 
-            {/* Bio Description - Mobile Glass Blur Box applied ONLY to this description paragraph */}
-            <p className="text-neutral-300 text-xs sm:text-sm leading-relaxed max-w-md font-normal pt-1 drop-shadow bg-black/60 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-3.5 lg:p-0 rounded-2xl border border-white/10 lg:border-none shadow-md lg:shadow-none">
+            {/* Bio Description with Protective Glass Backdrop to block canvas bleed-through */}
+            <p className="text-neutral-200 text-xs sm:text-sm leading-relaxed max-w-md font-normal pt-1 drop-shadow bg-black/80 backdrop-blur-xl p-4 rounded-2xl border border-white/10 shadow-xl">
               {HERO_DATA.description}
             </p>
 
