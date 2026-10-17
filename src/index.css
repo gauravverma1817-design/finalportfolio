@@ -639,3 +639,73 @@ body {
     margin-bottom: 0 !important;
   }
 }
+
+/* ==========================================================================
+   POSITION "AVAILABLE FOR OPPORTUNITIES" BADGE CLEANLY ABOVE STAT BOXES
+   ========================================================================== */
+@media (max-width: 768px) {
+
+  /* 1. Prevent left and right columns from overlapping */
+  #hero .grid.grid-cols-1,
+  #hero div[class*="grid-cols-1"] {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    width: 100% !important;
+    position: relative !important;
+  }
+
+  /* 2. Left column (Bio + Badge) */
+  #hero .lg\:col-span-7 {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    width: 100% !important;
+    gap: 8px !important;
+    position: relative !important;
+  }
+
+  /* 3. Availability Badge: Docked cleanly below bio, strictly above stat boxes */
+  #hero .pt-2,
+  #hero .pt-3,
+  #hero div:has(> .inline-flex svg.lucide-globe),
+  #hero div:has(> .inline-flex .lucide-globe) {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    margin-top: 4px !important;
+    margin-bottom: 10px !important;
+    padding: 0 !important;
+    clear: both !important;
+    z-index: 10 !important;
+  }
+
+  #hero .inline-flex.items-center:has(svg.lucide-globe),
+  #hero .inline-flex:has(.lucide-globe) {
+    position: static !important;
+    display: inline-flex !important;
+    width: auto !important;
+    max-width: fit-content !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
+  /* 4. Stats section (AI & ML, 40+, FREELANCER): strictly starts BELOW the badge */
+  #hero .lg\:col-span-5 {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    margin-top: 2px !important;
+    gap: 10px !important;
+    position: static !important;
+    clear: both !important;
+  }
+
+  #hero .lg\:col-span-5 div.flex-wrap,
+  #hero div.border-t:has(.font-tall) {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    position: static !important;
+  }
+}
