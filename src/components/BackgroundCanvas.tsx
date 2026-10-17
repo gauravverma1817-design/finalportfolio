@@ -13,6 +13,9 @@ export const BackgroundCanvas: React.FC = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Detect mobile viewport (< 768px)
+    const isMobile = window.innerWidth < 768;
+
     const images: (HTMLImageElement | null)[] = new Array(TOTAL_FRAMES).fill(null);
     const loadedStatus: boolean[] = new Array(TOTAL_FRAMES).fill(false);
     let totalLoadedCount = 0;
@@ -125,11 +128,34 @@ export const BackgroundCanvas: React.FC = () => {
       const dpr = window.devicePixelRatio || 1;
       canvas.width = window.innerWidth * dpr;
       canvas.height = window.innerHeight * dpr;
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
       renderCurrentState();
     };
 
+    // -------------------------------------------------------------
+    // MOBILE MODE: Static Image Only (No download queue, No animation)
+    // -------------------------------------------------------------
+    if (isMobile) {
+      const staticHeroImg = new Image();
+      staticHeroImg.src = getFrameFilename(1); // Load only Frame 1
+      staticHeroImg.onload = () => {
+        images[0] = staticHeroImg;
+        loadedStatus[0] = true;
+        setIsLoading(false);
+        resizeCanvas();
+        drawFrame(0);
+        updateCutoutOpacity(0);
+      };
+
+      window.addEventListener('resize', resizeCanvas);
+
+      return () => {
+        window.removeEventListener('resize', resizeCanvas);
+      };
+    }
+
+    // -------------------------------------------------------------
+    // DESKTOP MODE: Full 300-Frame Interactive Scroll Animation
+    // -------------------------------------------------------------
     let shatterProgress = 0;
     const SHATTER_70_FRAME = Math.floor(TOTAL_FRAMES * 0.70);
 
@@ -143,30 +169,6 @@ export const BackgroundCanvas: React.FC = () => {
         } else if (e.deltaY < 0 && shatterProgress > 0) {
           e.preventDefault();
           shatterProgress = Math.max(0, shatterProgress - Math.abs(e.deltaY) * 0.0025);
-          targetFrame = shatterProgress * SHATTER_70_FRAME;
-        }
-      }
-    };
-
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartY = e.touches[0].clientY;
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      const scrollTop = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
-      if (scrollTop <= 10) {
-        const touchY = e.touches[0].clientY;
-        const deltaY = touchStartY - touchY;
-
-        if (deltaY > 0 && shatterProgress < 1) {
-          e.preventDefault();
-          shatterProgress = Math.min(1, shatterProgress + deltaY * 0.005);
-          touchStartY = touchY;
-          targetFrame = shatterProgress * SHATTER_70_FRAME;
-        } else if (deltaY < 0 && shatterProgress > 0) {
-          e.preventDefault();
-          shatterProgress = Math.max(0, shatterProgress + deltaY * 0.005);
-          touchStartY = touchY;
           targetFrame = shatterProgress * SHATTER_70_FRAME;
         }
       }
@@ -203,7 +205,6 @@ export const BackgroundCanvas: React.FC = () => {
           const percent = Math.floor((totalLoadedCount / TOTAL_FRAMES) * 100);
           setLoadPercent(percent);
 
-          // As soon as the first frame loads, hide the loading screen immediately
           if (index0Based === 0 || totalLoadedCount >= 1) {
             setIsLoading(false);
             renderCurrentState();
@@ -254,10 +255,6 @@ export const BackgroundCanvas: React.FC = () => {
       });
     };
 
-    const failsafe = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-
     const animate = () => {
       const delta = targetFrame - currentFrame;
       if (Math.abs(delta) > 0.001) {
@@ -273,8 +270,6 @@ export const BackgroundCanvas: React.FC = () => {
     window.addEventListener('resize', resizeCanvas);
     window.addEventListener('scroll', updateTargetFromScroll, { passive: true });
     window.addEventListener('wheel', handleWheel, { passive: false });
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: false });
 
     resizeCanvas();
     updateTargetFromScroll();
@@ -282,12 +277,9 @@ export const BackgroundCanvas: React.FC = () => {
     animFrameId = requestAnimationFrame(animate);
 
     return () => {
-      clearTimeout(failsafe);
       window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('scroll', updateTargetFromScroll);
       window.removeEventListener('wheel', handleWheel);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
       cancelAnimationFrame(animFrameId);
     };
   }, []);
@@ -305,7 +297,7 @@ export const BackgroundCanvas: React.FC = () => {
 
       <canvas
         ref={canvasRef}
-        className="fixed top-0 left-0 w-screen h-screen pointer-events-none z-0 block object-cover filter brightness-[2] contrast-[1.55] saturate-[1.35]"
+        className="fixed top-0 left-0 w-screen h-screen pointer-events-none z-0 block object-cover filter brightness-[1.95] contrast-[1.55] saturate-[1.35] [image-rendering:crisp-edges]"
       />
     </>
   );
